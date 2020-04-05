@@ -116,6 +116,17 @@
       <div class="buttonContainer">
         <button
           class="hoverButton"
+          id="audioSwapButton"
+          onclick="$('#audioSelect').toggle()"
+        >
+          <i class="fas fa-cog fa-xs"></i>
+        </button>
+        <div class="HoverState">Change audio input</div>
+      </div>
+
+      <div class="buttonContainer">
+        <button
+          class="hoverButton"
           onclick="{window.location.href = '/pickname'}"
         >
           <i class="fas fa-phone-slash fa-xs"></i>
@@ -123,8 +134,15 @@
         <div class="HoverState">End Call</div>
       </div>
     </div>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 
+    <div id="audioSelect" onmouseleave="$('#audioSelect').toggle()">
+      <div class="select">
+        <label for="audioSource">Audio input source: </label
+        ><select id="audioSource" onchange="swapAudio()"></select>
+      </div>
+    </div>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="../js/snackbar.js"></script>
     <script src="../js/autolink.js"></script>

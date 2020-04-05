@@ -19,6 +19,7 @@ const isWebRTCSupported =
 // Element vars
 const chatInput = document.querySelector(".compose input");
 const pipVideo = document.getElementById("remote-video");
+const audioInputSelect = document.querySelector("select#audioSource");
 const remoteVideo = $("#remote-video");
 const captionText = $("#remote-video-text");
 
@@ -637,18 +638,11 @@ function startSpeech() {
         finalTranscript += transcript;
       } else {
         interimTranscript += transcript;
-        // if (interimTranscript.length < 100) {
-        dataChanel.send("cap:" + transcript);
-        // }
-        // console.log(interimTranscript);
-        console.log(transcript);
-
-        if (interimTranscript.length > 100) {
-          interimTranscript = "";
-          transcript = "";
-          // event.results[i][0].transcript = "";
-          console.log("reset");
-        }
+        var charsToKeep = interimTranscript.length % 100;
+        dataChanel.send(
+          "cap:" +
+            interimTranscript.substring(interimTranscript.length - charsToKeep)
+        );
       }
     }
   };
@@ -681,22 +675,21 @@ function startSpeech() {
 }
 
 function recieveCaptions(captions) {
-  captionText.text("").fadeIn();
-  if (!receivingCaptions) {
+  if (receivingCaptions) {
+    captionText.text("").fadeIn();
+  } else {
     captionText.text("").fadeOut();
   }
   if (captions === "notusingchrome") {
-    alert("Other caller must be using chrome for this feature to work");
+    alert(
+      "Other caller must be using chrome for this feature to work. Live Caption turned off."
+    );
     receivingCaptions = false;
     captionText.text("").fadeOut();
     $("#caption-text").text("Start Live Caption");
     return;
   }
-  if (captions.length > 299) {
-    captionText.text(captions.substr(captions.length - 299));
-  } else {
-    captionText.text(captions);
-  }
+  captionText.text(captions);
   rePositionCaptions();
 }
 
@@ -804,7 +797,7 @@ function startUp() {
   // Redirect unsupported browsers
   if (!isWebRTCSupported || browserName === "MSIE") {
     alert(
-      "Your browser doesn't support Zipcall. Please use Chrome, Firefox, or Safari on laptop/desktop."
+      "Your browser doesn't support Zipcall. Please use Chrome, Firefox, or Safari."
     );
     window.location.href = "/";
   }
@@ -883,9 +876,62 @@ function startUp() {
       );
     },
   });
+
+  captionText.text("Waiting for other user to join...").fadeIn();
+  rePositionCaptions();
 }
 
 startUp();
 
-captionText.text("Waiting for other user to join...").fadeIn();
-rePositionCaptions();
+// Audio switching
+
+function gotDevices(deviceInfos) {
+  while (audioInputSelect.firstChild) {
+    audioInputSelect.removeChild(audioInputSelect.firstChild);
+  }
+
+  for (let i = 0; i !== deviceInfos.length; ++i) {
+    const deviceInfo = deviceInfos[i];
+    const option = document.createElement("option");
+    option.value = deviceInfo.deviceId;
+
+    if (deviceInfo.kind === "audioinput") {
+      option.text =
+        deviceInfo.label || `microphone ${audioInputSelect.length + 1}`;
+      audioInputSelect.appendChild(option);
+    }
+  }
+}
+
+function handleNewAudioInput() {
+  navigator.mediaDevices
+    .enumerateDevices()
+    .then(gotDevices)
+    .catch((err) => logIt(err));
+  $("#audioSelect").show();
+}
+navigator.mediaDevices.ondevicechange = handleNewAudioInput;
+
+handleNewAudioInput();
+
+function swapAudio() {
+  // $("#audioSelect").hide();
+  const audioSource = audioInputSelect.value;
+  const constraints = {
+    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+  };
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then(function (stream) {
+      let audioTrack = stream.getAudioTracks()[0];
+      var sender = VideoChat.peerConnection.getSenders().find(function (s) {
+        return s.track.kind == audioTrack.kind;
+      });
+      sender.replaceTrack(audioTrack);
+    })
+    .catch(function (err) {
+      console.error("Error replacing audio track:", err);
+    });
+}
+
+$("#audioSelect").hide();
