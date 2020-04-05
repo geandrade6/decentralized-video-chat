@@ -138,7 +138,10 @@
     <div id="audioSelect" onmouseleave="$('#audioSelect').toggle()">
       <div class="select">
         <label for="audioSource">Audio input source: </label
-        ><select id="audioSource" onchange="swapAudio()"></select>
+        ><select id="audioSource"></select>
+        <button onclick="swapAudio()">
+          Change audio
+        </button>
       </div>
     </div>
 
