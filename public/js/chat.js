@@ -908,15 +908,22 @@ function handleNewAudioInput() {
     .enumerateDevices()
     .then(gotDevices)
     .catch((err) => logIt(err));
+  // todo only show if input options changed, not if output changes for example
   $("#audioSelect").show();
+  swapAudio();
 }
 navigator.mediaDevices.ondevicechange = handleNewAudioInput;
 
 handleNewAudioInput();
 
 function swapAudio() {
+  if (isMuted) {
+    muteMicrophone();
+  }
   // $("#audioSelect").hide();
   const audioSource = audioInputSelect.value;
+
+  console.log("swapping input audio to: " + audioInputSelect.value);
   const constraints = {
     audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
   };
